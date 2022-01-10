@@ -1,0 +1,48 @@
+version: '3.0'
+
+services:
+  redis-master:
+    image: redis:alpine
+
+  redis-slave:
+    image: redis:alpine
+    command: redis-server /mnt/configs/6380_redis_slave.conf
+    ports:
+      - "6380:6380"
+    depends_on:
+      - redis-master
+    volumes:
+      - .:/mnt/configs
+  
+  redis-sentinel-master:
+    image: redis:alpine
+    command: redis-server /mnt/configs/26379_redis_sentinel_master.conf --sentinel
+    depends_on:
+      - redis-slave
+    ports:
+      - "26379:26379"
+    volumes:
+      - .:/mnt/configs
+
+  redis-sentinel-slave:
+    image: redis:alpine
+    command: redis-server /mnt/configs/26380_redis_sentinel_slave.conf --sentinel
+    depends_on:
+      - redis-sentinel-master
+    ports:
+      - "26380:26380"
+    volumes:
+      - .:/mnt/configs
+
+  simple-redis-sentinel-java-application:
+    container_name: application
+    environment:
+      REDIS_MASTER_NAME: dba
+      REDIS_NODES: redis-sentinel-master:2679,redis-sentinel-slave:26380
+    depends_on:
+      - redis-sentinel-slave
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
