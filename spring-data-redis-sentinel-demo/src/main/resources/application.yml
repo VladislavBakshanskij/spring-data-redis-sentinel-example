@@ -1,0 +1,9 @@
+spring:
+  redis:
+#    host: 127.0.0.1
+    sentinel:
+      master: ${REDIS_MASTER_NAME:dba}
+      nodes: ${REDIS_NODES:localhost:26379,localhost:26380}
+      password: pass
+
+
